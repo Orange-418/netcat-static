@@ -1,6 +1,6 @@
 # netcat-static
 
-All files, besides compiled binary, are pulled from official Kali/Debian Repositories
+All files, besides compiled binary, are pulled from the official repository https://salsa.debian.org/debian/netcat-openbsd
 
 Statically compiled standalone netcat binary for x64 Linux. To end up with this binary, the compile instructions are as follows*:
 
