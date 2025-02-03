@@ -6,15 +6,13 @@ Statically compiled standalone netcat binary for x64 Linux. To end up with this 
 
 *using latest default kali image
 ```
-echo 'deb-src http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware' >> /etc/apt/sources.list
 sudo apt update && sudo apt upgrade
-sudo apt-get build-dep netcat-openbsd libc6-dev
-apt-get source netcat-openbsd
-cd netcat-openbsd-1.228
-export DEB_CFLAGS_MAINT_APPEND="-static"
-export DEB_LDFLAGS_MAINT_APPEND="-static"
-export DEB_BUILD_OPTIONS="nocheck"
-dpkg-buildpackage -us -uc -b
+#You need to compile without libssl. From my research, Kali nc is also compiled without. Purge libssl, then compile, ignoring unsatisfied dependencies.
+sudo apt-get remove --purge libssl-dev
+sudo apt-get install build-essential dpkg-dev devscripts git
+git clone https://salsa.debian.org/debian/netcat-openbsd.git
+cd netcat-openbsd
+dpkg-buildpackage -us -uc -b -d
 ```
 
 Sha-256 Hash of binary: 8556D1ECBE4BA296C84A561E21878A085755B01C017D5E48EF86492B4AA532FD
