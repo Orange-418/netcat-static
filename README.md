@@ -6,7 +6,7 @@ Statically compiled standalone netcat binary for x64 Linux. To end up with this 
 
 *using latest default kali image
 ```
-uncomment/add this line to /etc/apt/sources.list: deb-src http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware
+echo 'deb-src http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware' >> /etc/apt/sources.list
 sudo apt update && sudo apt upgrade
 sudo apt-get build-dep netcat-openbsd libc6-dev
 apt-get source netcat-openbsd
