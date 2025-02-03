@@ -12,7 +12,7 @@ sudo apt update && sudo apt upgrade
 sudo apt-get remove --purge libssl-dev
 
 sudo apt-get install build-essential dpkg-dev devscripts git pkg-config libbsd-dev
-git clone https://salsa.debian.org/debian/netcat-openbsd.git
+git clone --branch debian/1.228-1 --single-branch https://salsa.debian.org/debian/netcat-openbsd.git
 cd netcat-openbsd
 
 #remove checks. we don't need them, and it's a lot of code.
