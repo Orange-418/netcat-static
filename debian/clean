@@ -1,0 +1,2 @@
+debian/checks/*.so
+debian/checks/sun_path-size
