@@ -16,3 +16,5 @@ musl-gcc -Os -static -o netcat netcat.c \
     -Wno-implicit-int -Wno-implicit-function-declaration -Wno-int-conversion \
     -lresolv
 ```
+
+Sha-256 Hash of binary: 8094136D997B9C49B8A28861781E676C5F2927E6B548939198031AA8C14D9483
