@@ -1,0 +1,134 @@
+# check $BIND_ADDRESS
+check_bind_addr() {
+    local fam="$1" str=""
+    if [ "$fam" = "AF_INET" ]; then
+        str="sin_port=htons($3), sin_addr=inet_addr(\"$2\")"
+    elif [ "$fam" = "AF_INET6" ]; then
+        # assume IPv6 flow information and scope ID are both 0
+        str="sin6_port=htons($3), sin6_flowinfo=htonl(0), inet_pton($fam, \"$2\", &sin6_addr), sin6_scope_id=0"
+    elif [ "$fam" = "AF_UNIX" ]; then
+        str="sun_path=\"$2\""
+    else
+        printf "ERROR at line %d: Unknown address family \"%s\"\\n" ${BASH_LINENO[0]} "$fam" >&2
+        exit 1
+    fi
+    str="{sa_family=$fam, $str}"
+    if [ "$BIND_ADDRESS" != "$str" ]; then
+        printf "ERROR at line %d: Expected bind address \"%s\", got \"%s\"\\n" \
+            ${BASH_LINENO[0]} "$str" "$BIND_ADDRESS" >&2
+        exit 1
+    fi
+}
+
+# default address is INADDR_ANY
+PORT=$(random_port)
+netcat_listen $PORT
+check_bind_addr AF_INET "0.0.0.0" $PORT
+kill_and_wait $PID
+
+PORT=$(random_port)
+netcat_listen -4 $PORT
+check_bind_addr AF_INET "0.0.0.0" $PORT
+kill_and_wait $PID
+
+# if -6 then listen on in6addr_any
+PORT=$(random_port)
+netcat_listen -6 $PORT
+check_bind_addr AF_INET6 "::" $PORT
+kill_and_wait $PID
+
+PORT=$(random_port)
+netcat_listen "127.0.0.1" $PORT
+check_bind_addr AF_INET "127.0.0.1" $PORT
+kill_and_wait $PID
+
+PORT=$(random_port)
+netcat_listen "::1" $PORT
+check_bind_addr AF_INET6 "::1" $PORT
+kill_and_wait $PID
+
+# UNIX domain socket
+PORT=$(random_port)
+install -m0600 /dev/null -- "$TEMPDIR/$PORT.sock" # nc should delete existing files before bind()'ing
+netcat_listen -U "$TEMPDIR/$PORT.sock"
+test -S "$TEMPDIR/$PORT.sock"
+check_bind_addr AF_UNIX "$TEMPDIR/$PORT.sock"
+kill_and_wait $PID
+
+# check size limit
+UNIX_PATH_MAX="$( $(dirname -- "$0")/sun_path-size )"
+REAL_NC="$(realpath -e -- "$NC")"
+sun_path="$(head -c $UNIX_PATH_MAX </dev/urandom | base64 -w0 | tr '+/' '-_' | head -c $((UNIX_PATH_MAX - 1)))"
+(
+    cd "$TEMPDIR" && \
+    NC="$REAL_NC" netcat_listen -U -- "$sun_path" && \
+    check_bind_addr AF_UNIX "$sun_path" && \
+    kill_and_wait $PID
+)
+( cd "$TEMPDIR" && ! "$REAL_NC" -lU -- "-$sun_path" 2>"$TEMPDIR/nc.err" )
+grep -Fxq "nc: File name too long" <"$TEMPDIR/nc.err"
+
+
+#######################################################################
+# d/p/use-flags-to-specify-listen-address.patch
+
+PORT=$(random_port)
+netcat_listen -p $PORT
+check_bind_addr AF_INET "0.0.0.0" $PORT
+kill_and_wait $PID
+
+PORT=$(random_port)
+netcat_listen -s "127.0.0.1" -p $PORT
+check_bind_addr AF_INET "127.0.0.1" $PORT
+kill_and_wait $PID
+
+PORT=$(random_port)
+netcat_listen -Us "$TEMPDIR/$PORT.sock"
+check_bind_addr AF_UNIX "$TEMPDIR/$PORT.sock"
+kill_and_wait $PID
+
+
+#######################################################################
+# d/p/abstract-unix-domain-socket.patch
+
+check_abstract_unix_domain_socket() {
+    local sun_path="$1" sockaddr
+    netcat_listen -U @"$sun_path"
+    sockaddr="{sa_family=AF_UNIX, sun_path=@\"$sun_path\"}"
+    kill_and_wait $PID
+    if [ "$BIND_ADDRESS" != "$sockaddr" ]; then
+        printf "ERROR at line %d: Expected bind address \"%s\", got \"%s\"\\n" \
+            ${BASH_LINENO[0]} "$sockaddr" "$BIND_ADDRESS" >&2
+        exit 1
+    fi
+}
+
+uname_s="$(uname -s)"
+if [ "${uname_s^[A-Z]}" = "Linux" ]; then
+    check_abstract_unix_domain_socket "/nonexistent/$0"            # non-existing path
+    check_abstract_unix_domain_socket "$0"                         # existing path
+    check_abstract_unix_domain_socket "@netcat-openbsd/$TEST_NAME" # multiple leading @
+
+    # check size limit
+    sun_path="$(head -c $UNIX_PATH_MAX </dev/urandom | base64 -w0 | head -c $((UNIX_PATH_MAX - 1)))"
+    check_abstract_unix_domain_socket "$sun_path"
+    test \! -e "$sun_path"
+    test \! -e @"$sun_path"
+    ! "$NC" -lU @"#$sun_path" 2>"$TEMPDIR/nc.err"
+    grep -Fxq "nc: File name too long" <"$TEMPDIR/nc.err"
+fi
+
+sun_path="netcat-openbsd.$TEST_NAME"
+install -m0600 /dev/null -- "$TEMPDIR/@$sun_path"
+st1="$(stat -c"%i %z" "$TEMPDIR/@$sun_path")"
+( cd "$TEMPDIR" && NC="$REAL_NC" netcat_listen -U @"$sun_path" && kill_and_wait $PID )
+if [ "${uname_s^[A-Z]}" = "Linux" ]; then
+    # "$TEMPDIR/@$sun_path" should be preserved since we bound to an abstract socket
+    test -f "$TEMPDIR/@$sun_path"
+    st2="$(stat -c"%i %z" "$TEMPDIR/@$sun_path")"
+    test "$st1" = "$st2"
+else
+    test -S "$TEMPDIR/@$sun_path"
+fi
+
+# vim: set filetype=bash :
