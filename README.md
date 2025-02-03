@@ -12,7 +12,8 @@ sudo apt-get remove --purge libssl-dev
 sudo apt-get install build-essential dpkg-dev devscripts git pkg-config libbsd-dev
 git clone https://salsa.debian.org/debian/netcat-openbsd.git
 cd netcat-openbsd
-rm -rf debian/tests
+rm -rf debian/checks
+export DEB_LDFLAGS_MAINT_APPEND="-static"
 DEB_BUILD_OPTIONS="nocheck" dpkg-buildpackage -us -uc -b -d
 ```
 
