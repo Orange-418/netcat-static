@@ -1,5 +1,7 @@
 # netcat-static
 
+All files, besides compiled binary, are pulled from official Debian repository at: https://salsa.debian.org/debian/netcat
+
 Statically compiled standalone netcat binary for x64 Linux. To end up with this binary, the compile instructions are as follows*:
 *using latest default kali image
 ```
