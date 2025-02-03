@@ -9,7 +9,7 @@ Statically compiled standalone netcat binary for x64 Linux. To end up with this 
 sudo apt update && sudo apt upgrade
 #Compile without libssl. From my research, Kali nc is also compiled without. Purge libssl, then compile, ignoring unsatisfied dependencies. Avoids modifying source code.
 sudo apt-get remove --purge libssl-dev
-sudo apt-get install build-essential dpkg-dev devscripts git
+sudo apt-get install build-essential dpkg-dev devscripts git pkg-config
 git clone https://salsa.debian.org/debian/netcat-openbsd.git
 cd netcat-openbsd
 dpkg-buildpackage -us -uc -b -d
