@@ -1,0 +1,29 @@
+Author: Andreas Beckmann <anbe@debian.org>
+Description: fix building with -Werror=implicit-int
+
+--- a/netcat.c
++++ b/netcat.c
+@@ -609,6 +609,7 @@ int doexec_use_sh = 0;			/* `-c' or `-e'
+    that would be security-critical, which is why it's ifdefed out by default.
+    Use at your own hairy risk; if you leave shells lying around behind open
+    listening ports you deserve to lose!! */
++int
+ doexec (fd)
+   int fd;
+ {
+@@ -1032,6 +1033,7 @@ dol_err:
+    Use the time delay between writes if given, otherwise use the "tcp ping"
+    trick for getting the RTT.  [I got that idea from pluvius, and warped it.]
+    Return either the original fd, or clean up and return -1. */
++int
+ udptest (fd, where)
+   int fd;
+   IA * where;
+@@ -1421,6 +1423,7 @@ char * unescape(start)
+ 
+ /* main :
+    now we pull it all together... */
++int
+ main (argc, argv)
+   int argc;
+   char ** argv;
